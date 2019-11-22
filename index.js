@@ -1,8 +1,10 @@
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
+const cors = require('cors')
 
 app.use(bodyParser.json())
+app.use(cors())
 
 let notes = [
   {
@@ -24,6 +26,16 @@ let notes = [
     important: true
   }
 ]
+
+const requestLogger = (req, res, next) => {
+  console.log('Method:', req.method)
+  console.log('Path:  ', req.path)
+  console.log('Body:  ', req.body)
+  console.log('---')
+  next()
+}
+
+app.use(requestLogger)
 
 app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>')
@@ -53,7 +65,7 @@ const generateId = () => {
 }
 
 app.post('/notes', (req, res) => {
-  const body = request.body
+  const body = req.body
   
   if (!body.content) {
     return res.status(400).json({
@@ -65,7 +77,7 @@ app.post('/notes', (req, res) => {
     content: body.content,
     important: body.important || false,
     date: new Date(),
-    id: generateId
+    id: generateId()
   }
 
   notes = notes.concat(note)
@@ -73,7 +85,13 @@ app.post('/notes', (req, res) => {
   res.json(note)
 })
 
-const PORT = 3001
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
